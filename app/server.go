@@ -40,12 +40,5 @@ func main() {
 	}
 	fmt.Printf("Received %d bytes: %s\n", n, string(buf[:n]))
 
-	// Optionally, write a response back to the client
-	_, err = conn.Write([]byte("Hello from server"))
-	if err != nil {
-		fmt.Println("Error writing to connection:", err.Error())
-		return
-	}
-
 	fmt.Println("Connection handled successfully")
 }
