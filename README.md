@@ -1,3 +1,15 @@
+# Franz
+
+## Introduction
+
+Franz is heavily inspired by Apache Kafka, which is a distributed event streaming platform.
+
+### Why am I building this?
+
+I first encountered Apache Kafka from Fireship.io's video, I wish to have a better understand of what Kafka does. Hence, I am building my own version of Kafka with some twist to obtain a better understanding of Kafka and what it means to be a distributed event streaming platform.
+
+Note: Below are from codecrafters.io which I am using to get a structured path to building the finished product. Also note that only the starter code and some codecrafters config/build file/folders is from codecrafters.io, everything else is my own code.
+
 [![progress-banner](https://backend.codecrafters.io/progress/kafka/dc080a07-9161-4c66-94bd-bdb7078cfc0a)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
 
 This is a starting point for Go solutions to the
