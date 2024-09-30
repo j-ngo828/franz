@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"net"
 	"os"
@@ -9,6 +10,8 @@ import (
 // Ensures gofmt doesn't remove the "net" and "os" imports in stage 1 (feel free to remove this!)
 var _ = net.Listen
 var _ = os.Exit
+
+const SEVEN int32 = 7
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -31,7 +34,7 @@ func main() {
 
 	fmt.Println("Successfully set up connection")
 
-	// For example, read from the connection
+	// Read APIVersions requests
 	buf := make([]byte, 1024)
 	n, err := conn.Read(buf)
 	if err != nil {
@@ -39,6 +42,11 @@ func main() {
 		return
 	}
 	fmt.Printf("Received %d bytes: %s\n", n, string(buf[:n]))
+
+	// first 4 bytes are 0, last 4 bytes should represent 7 in big endian byte
+	response := make([]byte, 8)
+	binary.BigEndian.PutUint32(response, uint32(SEVEN))
+	conn.Write(response)
 
 	fmt.Println("Connection handled successfully")
 }
