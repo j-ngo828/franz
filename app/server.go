@@ -33,13 +33,14 @@ func main() {
 	fmt.Println("Successfully set up connection")
 
 	// Read APIVersions requests
-	// buf := make([]byte, 1024)
-	// n, err := conn.Read(buf)
-	// if err != nil {
-	// 	fmt.Println("Error reading from connection:", err.Error())
-	// 	return
-	// }
-	// fmt.Printf("Received %d bytes: %s\n", n, string(buf[:n]))
+	// NOTE: we must read in request sent to this server
+	buf := make([]byte, 1024)
+	n, err := conn.Read(buf)
+	if err != nil {
+		fmt.Println("Error reading from connection:", err.Error())
+		return
+	}
+	fmt.Printf("Received %d bytes: %s\n", n, string(buf[:n]))
 
 	// first 4 bytes are 0, last 4 bytes should represent 7 in big endian byte
 	response := make([]byte, 8)
