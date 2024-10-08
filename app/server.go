@@ -5,24 +5,31 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"slices"
 )
 
 // Ensures gofmt doesn't remove the "net" and "os" imports in stage 1 (feel free to remove this!)
 var _ = net.Listen
 var _ = os.Exit
 
-const SEVEN uint32 = 7
-
-func getCorrelationId(buf []byte) []byte {
-	return buf[8:12]
+func getCorrelationId(buf []byte) uint32 {
+	return binary.BigEndian.Uint32(buf[8:12])
 }
 
-func setCorrelationId(res []byte, correlationId uint32) {
-	binary.BigEndian.PutUint32(res[4:], correlationId)
+func getRequestApiVersion(buf []byte) uint16 {
+	return binary.BigEndian.Uint16(buf[6:8])
+}
+
+func writeCorrelationId(res []byte, correlationId uint32) {
+	binary.BigEndian.PutUint32(res[4:8], correlationId)
+}
+
+func writeErrorCode(res []byte, errCode uint16) {
+	binary.BigEndian.PutUint16(res[8:10], errCode)
 }
 
 func main() {
-	validAPIVersions := []int{0, 1, 2, 3}
+	validAPIVersions := []uint16{0, 1, 2, 3}
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
 
@@ -52,13 +59,18 @@ func main() {
 	fmt.Printf("Received %d bytes: %s\n", n, string(buf[:n]))
 
 	// first 4 bytes are 0, last 4 bytes should represent correlation_id field from request
-	response := make([]byte, 8)
+	response := make([]byte, 12)
 
 	// NOTE:
 	// read 4 bytes, starting from the 8th byte, since correlation_id is 32 bits.
 	// first 4 bytes from the buffer are for the message length!!
-	correlationId := binary.BigEndian.Uint32(getCorrelationId(buf))
-	setCorrelationId(response, correlationId)
+	correlationId := getCorrelationId(buf)
+	writeCorrelationId(response, correlationId)
+	requestApiVersion := getRequestApiVersion(buf)
+
+	if !slices.Contains(validAPIVersions, requestApiVersion) {
+		writeErrorCode(response, 35)
+	}
 	conn.Write(response)
 
 	fmt.Println("Connection handled successfully")
