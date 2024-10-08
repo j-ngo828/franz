@@ -28,6 +28,10 @@ func writeErrorCode(res []byte, errCode uint16) {
 	binary.BigEndian.PutUint16(res[8:10], errCode)
 }
 
+func createResponse(len int) []byte {
+	return make([]byte, len, 1024)
+}
+
 func main() {
 	validAPIVersions := []uint16{0, 1, 2, 3}
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -59,7 +63,7 @@ func main() {
 	fmt.Printf("Received %d bytes: %s\n", n, string(buf[:n]))
 
 	// first 4 bytes are 0, last 4 bytes should represent correlation_id field from request
-	response := make([]byte, 12)
+	response := createResponse(n)
 
 	// NOTE:
 	// read 4 bytes, starting from the 8th byte, since correlation_id is 32 bits.
