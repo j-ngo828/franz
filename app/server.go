@@ -42,9 +42,11 @@ func main() {
 	}
 	fmt.Printf("Received %d bytes: %s\n", n, string(buf[:n]))
 
-	// first 4 bytes are 0, last 4 bytes should represent 7 in big endian byte
+	// first 4 bytes are 0, last 4 bytes should represent correlation_id field from request
 	response := make([]byte, 8)
-	binary.BigEndian.PutUint32(response[4:], SEVEN)
+	correctionId := binary.BigEndian.Uint32(buf[8:12])
+	fmt.Println(correctionId)
+	binary.BigEndian.PutUint32(response[4:], correctionId)
 	conn.Write(response)
 
 	fmt.Println("Connection handled successfully")
