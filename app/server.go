@@ -44,6 +44,10 @@ func main() {
 
 	// first 4 bytes are 0, last 4 bytes should represent correlation_id field from request
 	response := make([]byte, 8)
+
+	// NOTE:
+	// read 4 bytes, starting from the 8th byte, since correlation_id is 32 bits.
+	// first 4 bytes from the buffer are for the message length!!
 	correctionId := binary.BigEndian.Uint32(buf[8:12])
 	fmt.Println(correctionId)
 	binary.BigEndian.PutUint32(response[4:], correctionId)
