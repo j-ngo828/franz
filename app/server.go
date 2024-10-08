@@ -13,7 +13,16 @@ var _ = os.Exit
 
 const SEVEN uint32 = 7
 
+func getCorrelationId(buf []byte) []byte {
+	return buf[8:12]
+}
+
+func setCorrelationId(res []byte, correlationId uint32) {
+	binary.BigEndian.PutUint32(res[4:], correlationId)
+}
+
 func main() {
+	validAPIVersions := []int{0, 1, 2, 3}
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
 
@@ -48,9 +57,8 @@ func main() {
 	// NOTE:
 	// read 4 bytes, starting from the 8th byte, since correlation_id is 32 bits.
 	// first 4 bytes from the buffer are for the message length!!
-	correctionId := binary.BigEndian.Uint32(buf[8:12])
-	fmt.Println(correctionId)
-	binary.BigEndian.PutUint32(response[4:], correctionId)
+	correlationId := binary.BigEndian.Uint32(getCorrelationId(buf))
+	setCorrelationId(response, correlationId)
 	conn.Write(response)
 
 	fmt.Println("Connection handled successfully")
