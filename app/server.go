@@ -8,7 +8,6 @@ import (
 	"slices"
 )
 
-// Ensures gofmt doesn't remove the "net" and "os" imports in stage 1 (feel free to remove this!)
 var _ = net.Listen
 var _ = os.Exit
 
@@ -40,20 +39,39 @@ func writeErrorCode(res []byte, errCode uint16) {
 	binary.BigEndian.PutUint16(res[8:10], errCode)
 }
 
-func writeRequestApiKey(res []byte, apiKey uint16) {
-	binary.BigEndian.PutUint16(res[10:12], apiKey)
+func writeApiKeysArray(res []byte) {
+	// Write number of API keys (1)
+	binary.BigEndian.PutUint16(res[10:12], 1)
+
+	// Write APIVersions key (18)
+	binary.BigEndian.PutUint16(res[12:14], 18)
+	// Min version
+	binary.BigEndian.PutUint16(res[14:16], 0)
+	// Max version
+	binary.BigEndian.PutUint16(res[16:18], 4)
+}
+
+func writeTaggedFields(res []byte) {
+	// Write varint 0 to indicate no tagged fields
+	res[18] = 0
+}
+
+func writeThrottleTime(res []byte) {
+	binary.BigEndian.PutUint32(res[19:23], 0)
+}
+
+func writeFinalTaggedFields(res []byte) {
+	// Write varint 0 to indicate no tagged fields
+	res[23] = 0
 }
 
 func createResponse(len int) []byte {
-	return make([]byte, len, 1024)
+	return make([]byte, len)
 }
 
 func main() {
 	validAPIVersions := []uint16{0, 1, 2, 3, 4}
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
-
-	// Uncomment this block to pass the first stage
 
 	l, err := net.Listen("tcp", "0.0.0.0:9092")
 	if err != nil {
@@ -68,8 +86,6 @@ func main() {
 
 	fmt.Println("Successfully set up connection")
 
-	// Read APIVersions requests
-	// NOTE: we must read in request sent to this server
 	buf := make([]byte, 1024)
 	n, err := conn.Read(buf)
 	if err != nil {
@@ -78,36 +94,27 @@ func main() {
 	}
 	fmt.Printf("Received %d bytes: %s\n", n, string(buf[:n]))
 
-	// first 4 bytes are 0, last 4 bytes should represent correlation_id field from request
-	response := createResponse(n)
-	fmt.Printf("response:\t %v \n", []byte(response))
-	// NOTE:
-	// read 4 bytes, starting from the 8th byte, since correlation_id is 32 bits.
-	// first 4 bytes from the buffer are for the message length!!
+	response := createResponse(24) // Total size including message length field
+	messageLen := uint32(20)       // Size of everything after message length field
+	writeMessageLen(response, messageLen)
+
 	correlationId := getCorrelationId(buf)
 	writeCorrelationId(response, correlationId)
-	fmt.Printf("response:\t %v \n", []byte(response))
 
 	requestApiVersion := getRequestApiVersion(buf)
-
 	if !slices.Contains(validAPIVersions, requestApiVersion) {
 		writeErrorCode(response, 35)
-	} else {
-		writeErrorCode(response, 0)
+		conn.Write(response)
+		os.Exit(1)
 	}
-	fmt.Printf("response:\t %v \n", []byte(response))
 
-	messageLen := getMessageLen(buf)
-	writeMessageLen(response, messageLen)
-	fmt.Printf("response:\t %v \n", []byte(response))
-
-	apiKey := getRequestApiKey(buf)
-	writeRequestApiKey(response, apiKey)
-	fmt.Printf("response:\t %v \n", []byte(response))
+	writeErrorCode(response, 0)
+	writeApiKeysArray(response)
+	writeTaggedFields(response) // Tagged fields before throttle time
+	writeThrottleTime(response)
+	writeFinalTaggedFields(response) // Tagged fields at the end
 
 	conn.Write(response)
-	fmt.Println("N: %d", n)
-	fmt.Println("Connection handled successfully")
 	l.Close()
-	conn.Close() // Ensure the connection is closed properly
+	conn.Close()
 }
