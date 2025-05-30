@@ -5,12 +5,12 @@ Franz is a distributed message queue system inspired by Apache Kafka, built from
 ## Features
 
 ### Core Features (Phase 1)
-- [x] Topic-based publish/subscribe messaging
-- [x] Partitioned topics for parallelism
-- [x] Consumer groups with automatic partition assignment
-- [x] At-least-once delivery guarantees
-- [x] Persistent storage with log segments
-- [x] Leader/follower replication
+- [ ] Topic-based publish/subscribe messaging
+- [ ] Partitioned topics for parallelism
+- [ ] Consumer groups with automatic partition assignment
+- [ ] At-least-once delivery guarantees
+- [ ] Persistent storage with log segments
+- [ ] Leader/follower replication
 
 ### Advanced Features (Phase 2)
 - [ ] Exactly-once semantics
