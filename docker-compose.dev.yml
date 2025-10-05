@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  # Development broker with hot reload
+  franz-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    ports:
+      - "9092:9092" # Franz protocol
+      - "9093:9093" # Raft consensus
+      - "9094:9094" # Metrics
+    volumes:
+      - .:/app
+      - ./data:/app/data
+      - /tmp/go-cache:/go-cache
+    environment:
+      GOPROXY: https://proxy.golang.org,direct
+      GOSUMDB: sum.golang.org
+    networks:
+      - franzDev
+    stdin_open: true
+    tty: true
+    command: ["air", "-c", ".air.toml"]
+
+    # Development-friendly healthcheck
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - franz-storage
+
+  # Persistent storage volume
+  franz-storage:
+    image: alpine:latest
+    volumes:
+      - ./data:/data
+      - ./logs:/logs
+    command:
+      [
+        "sh",
+        "-c",
+        "mkdir -p /data /logs && chown -R 1001:1001 /data /logs && tail -f /dev/null",
+      ]
+    networks:
+      - franzDev
+
+networks:
+  franzDev:
+    driver: bridge
+
+volumes:
+  go-cache:
+  franz-data:
+  franz-logs:

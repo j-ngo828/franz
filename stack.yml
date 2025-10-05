@@ -1,0 +1,75 @@
+version: "3.8"
+
+services:
+  franz-broker:
+    image: franz:${VERSION:-latest}
+    networks:
+      - franz-overlay
+    ports:
+      - target: 9092
+        published: 9092
+        protocol: tcp
+        mode: host
+      - target: 9093
+        published: 9093
+        protocol: tcp
+        mode: host
+      - target: 9094
+        published: 9094
+        protocol: tcp
+        mode: host
+    volumes:
+      - type: bind
+        source: /var/lib/franz/data
+        target: /app/data
+      - type: bind
+        source: /var/log/franz
+        target: /app/logs
+      - type: bind
+        source: ./configs
+        target: /app/configs
+        read_only: true
+    environment:
+      - FRANZ_BROKER_ID={{.Task.Slot}}
+      - FRANZ_CLUSTER_ID=${FRANZ_CLUSTER_ID:-franz-cluster-prod}
+      - FRANZ_DATA_DIR=/app/data
+      - FRANZ_LOG_DIR=/app/logs
+    deploy:
+      mode: replicated
+      replicas: 3
+      placement:
+        max_replicas_per_node: 1
+        constraints:
+          - node.labels.franz.broker == true
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        order: stop-first
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        order: stop-first
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  franz-overlay:
+    driver: overlay
+    attachable: true

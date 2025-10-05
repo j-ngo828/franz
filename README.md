@@ -59,30 +59,56 @@ make cluster-start
 
 ```
 franz/
-├── cmd/                 # Executable commands
-│   ├── broker/         # Broker server
-│   ├── producer/       # CLI producer
-│   └── consumer/       # CLI consumer
-├── pkg/                # Core packages
-│   ├── broker/         # Broker implementation
-│   ├── storage/        # Storage engine
-│   ├── protocol/       # Wire protocol
-│   ├── client/         # Client library
-│   ├── consensus/      # Raft consensus
-│   └── common/         # Shared utilities
-├── api/proto/          # Protocol buffer definitions
-├── configs/            # Configuration files
-├── scripts/            # Utility scripts
-└── tests/              # Test suites
+├── cmd/                    # Command-line applications
+│   ├── broker/            # Main broker server
+│   ├── producer/          # Producer CLI tool
+│   ├── consumer/          # Consumer CLI tool
+│   └── cli/               # Admin/management CLI
+├── internal/              # Private application code
+│   ├── broker/            # Broker core logic
+│   ├── storage/           # Log-structured storage
+│   ├── raft/              # Raft consensus protocol
+│   ├── protocol/          # Wire protocol
+│   ├── config/            # Configuration management
+│   └── metrics/           # Metrics and monitoring
+├── pkg/                   # Public library code
+│   ├── client/            # Client SDK
+│   └── types/             # Shared types
+├── configs/               # Configuration files
+├── scripts/               # Deployment and utility scripts
+│   ├── deploy.sh          # Docker Swarm deployment
+│   └── setup-nodes.sh     # Node preparation
+├── deployments/           # Deployment configurations
+├── docs/                  # Documentation
+└── tests/                 # Test suites
+    ├── unit/
+    ├── integration/
+    └── benchmark/
 ```
+
+See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for detailed documentation.
 
 ## Development
 
 ### Prerequisites
 
 - Go 1.22 or later
-- Protocol Buffers compiler
+- Docker and Docker Compose
+- Protocol Buffers compiler (optional)
 - Make
+
+### Development with Docker Compose
+
+```bash
+# Start development environment with hot reload
+make dev
+
+# View logs
+make dev-logs
+
+# Stop development environment
+make dev-down
+```
 
 ### Building from Source
 
@@ -90,6 +116,72 @@ franz/
 git clone https://github.com/jang3435/franz
 cd franz
 make build
+```
+
+## Deployment
+
+### Docker Swarm (Production)
+
+Franz uses Docker Swarm for production deployments with Raft consensus across multiple nodes.
+
+#### Prerequisites
+
+- Docker Swarm initialized cluster
+- At least 3 nodes (recommended for Raft consensus)
+- Network connectivity between nodes
+
+#### Deployment Steps
+
+1. **Prepare environment**:
+   ```bash
+   cp .env.production.example .env.production
+   # Edit .env.production with your configuration
+   ```
+
+2. **Setup nodes** (run on each node):
+   ```bash
+   make setup-nodes
+   ```
+
+3. **Deploy to Swarm**:
+   ```bash
+   make deploy
+   ```
+
+4. **Check deployment status**:
+   ```bash
+   make deploy-status
+   ```
+
+#### Management Commands
+
+```bash
+# View service logs
+docker service logs -f franz_franz-broker
+
+# Scale brokers
+docker service scale franz_franz-broker=5
+
+# Update service
+VERSION=v1.2.0 make deploy
+
+# Remove deployment
+make deploy-remove
+```
+
+### Docker Compose (Development Only)
+
+For local development with hot reload:
+
+```bash
+# Start single broker with hot reload
+make dev
+
+# View logs
+make dev-logs
+
+# Stop
+make dev-down
 ```
 
 ### Running Tests
@@ -103,6 +195,63 @@ make test-integration
 
 # Benchmarks
 make bench
+
+# Run tests in Docker
+make docker-test
+```
+
+### Port Configuration
+
+Development (single broker):
+- **Franz Protocol**: `localhost:9092`
+- **Raft Consensus**: `localhost:9093`
+- **Metrics**: `localhost:9094`
+
+Production (Docker Swarm):
+- Services use overlay networking
+- Published ports: 9092 (Franz), 9093 (Raft), 9094 (Metrics)
+
+## Troubleshooting
+
+### Development Issues
+
+**Container won't start:**
+```bash
+# Check logs
+make dev-logs
+
+# Rebuild without cache
+docker-compose -f docker-compose.dev.yml build --no-cache
+```
+
+**Port conflicts:**
+```bash
+# Check what's using ports
+lsof -i :9092
+
+# Modify docker-compose.dev.yml to use different ports
+```
+
+### Deployment Issues
+
+**Swarm not initialized:**
+```bash
+docker swarm init
+```
+
+**Service not starting:**
+```bash
+# Check service status
+docker service ps franz_franz-broker --no-trunc
+
+# View service logs
+docker service logs franz_franz-broker
+```
+
+**Node labels missing:**
+```bash
+# Manually label nodes
+docker node update --label-add franz.broker=true <node-id>
 ```
 
 ## Performance

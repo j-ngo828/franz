@@ -1,0 +1,29 @@
+broker:
+  id: "broker-1"
+  host: "0.0.0.0"
+  port: 9092
+  cluster_id: "franz-cluster"
+  data_dir: "/app/data"
+  log_dir: "/app/logs"
+
+storage:
+  segment_size: 1073741824  # 1GB
+  retention_bytes: 10737418240  # 10GB
+  retention_minutes: 10080  # 7 days
+
+raft:
+  port: 9093
+  heartbeat_tick: 100
+  election_tick: 1000
+  snapshot_interval: 10000
+  peers:
+    - id: "broker-1"
+      address: "franz-broker-1:9093"
+    - id: "broker-2"
+      address: "franz-broker-2:9093"
+    - id: "broker-3"
+      address: "franz-broker-3:9093"
+
+metrics:
+  enabled: true
+  port: 9094
